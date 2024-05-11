@@ -1,43 +1,41 @@
 import requests
 from bs4 import BeautifulSoup as BS
 import os
-
+import json
 
 class Coin:
-    __name = str
-    __symbol = str
-    __price = str
-    __marketcap = str
+    name = str
+    symbol = str
+    price = str
+    marketcap = str
 
     def __init__(self, name : str, symbol : str, price : str, marketcap : str) -> None:
-        self.__name = name
-        self.__symbol = symbol
-        self.__price = price
-        self.__marketcap = marketcap
+        self.name = name
+        self.symbol = symbol
+        self.price = price
+        self.marketcap = marketcap
 
     def getName(self) -> str:
-        return self.__name
+        return self.name
 
     def __str__(self) -> str:
-        return f"{self.__name} {self.__symbol} {self.__price} {self.__marketcap}"
+        return f"{self.name} {self.symbol} {self.price} {self.marketcap}"
     
 class Parser:
-    __url = str
-    __coins = []
+    url = str
+    coins = []
 
     def __init__(self):
-        self.__url = 'https://coinmarketcap.com/'
-        self.__parseCoins()
+        self.url = 'https://coinmarketcap.com/'
+        self.parseCoins()
 
-    def __parseCoins(self):
-        resp = requests.get(self.__url)
+    def parseCoins(self):
+        resp = requests.get(self.url)
         soup = BS(resp.text, "lxml")
         tbody = soup.find("tbody")
         coins = tbody.find_all("tr")
-        parsed_coins = []
-        
         for coin in coins:
-            name = coin.find_all("td")[2]
+            name = coin.find_all("td")[2].find("p")
             symbol = coin.find_all("td")[2].find(class_ = "crypto-symbol")
             marketcap = coin.find(class_ = "sc-7bc56c81-0")
             price = coin.find_all("td")[3]
@@ -46,10 +44,10 @@ class Parser:
                 symbol = coin.find(class_ = "coin-item-symbol")
             
             if not (marketcap == None):
-                self.__coins.append(Coin(name.text, symbol.text, price.text, marketcap.text))
+                self.coins.append(Coin(name.text, symbol.text, price.text, marketcap.text))
 
     def getCoins(self):
-        return self.__coins
+        return self.coins
     
 
 class Menu:
@@ -63,7 +61,8 @@ class Menu:
     def printMenu(self):
         print("1) Вывести все монеты на экран.")
         print("2) Поиск монеты по названию.")
-        print("3) Выход.\n")
+        print("3) Запись данных в файл в формате JSON.")
+        print("4) Выход из программы.")
 
 
     def Start(self):
@@ -71,7 +70,7 @@ class Menu:
         self.printMenu()
         while(flag):
             
-            choice = int(input("Введите число от 1 до 3: "))
+            choice = int(input("Введите число от 1 до 4: "))
 
             match choice:
                 case 1: 
@@ -85,9 +84,11 @@ class Menu:
                     os.system('cls || clear')
                     self.printMenu()
                 case 3:
+                    self.writeData()
+                    os.system("pause")
                     os.system('cls || clear') 
-                    break
-                case _:
+                    self.printMenu()
+                case 4:
                     os.system('cls || clear')
                     break
 
@@ -101,13 +102,38 @@ class Menu:
                 break
         if (not flag) : print("Монета не найдена.")
 
+    def writeData(self):
+        fileName = "test.txt"
+
+        with open(fileName, "w") as file:
+            for coin in self.coins:
+                json_coin = json.dumps(coin_serializer(coin))
+                file.write(json_coin + "\n")
+        print("Данные записаны в файл.\n")
 
     def printCoins(self):
         for coin in self.coins:
             print(coin)
             
 
+def coin_serializer(coin: Coin):
+    return{
+        "name" : coin.getName(),
+        "symbol" : coin.symbol,
+        "price" : coin.price,
+        "marketcap" : coin.marketcap 
+    }
+
+def coin_desirializer(coin: dict):
+    assert len(coin.keys()) == 4
+    assert "name" in coin
+    assert "symbol" in coin
+    assert "price" in coin
+    assert "marketcap" in coin
+    return Coin(**coin)
+
 menu = Menu()
+
 
 
 
